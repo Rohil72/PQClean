@@ -1,4 +1,4 @@
-name: PQClean Benchmarking
+name: PQClean Comprehensive Benchmarking
 
 on:
   push:
@@ -9,51 +9,50 @@ jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
-      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Set up dependencies
       - name: Set up dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc make time
+          sudo apt-get install -y gcc clang make time
 
-      # Benchmark 1: Time Benchmark
-      - name: Compile and Run Time Benchmark
+      # Run GCC Benchmarks
+      - name: Run GCC Benchmarks
         run: |
           cd crypto_sign/falcon-512/clean
           gcc -o time_benchmark time_benchmark.c
           ./time_benchmark > time_benchmark_results.txt
-
-      # Benchmark 2: Cost Benchmark (CPU and Memory usage)
-      - name: Compile and Run Cost Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
           gcc -o cost_benchmark cost_benchmark.c
           /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
-
-      # Benchmark 3: Throughput Benchmark
-      - name: Compile and Run Throughput Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
           gcc -o throughput_benchmark throughput_benchmark.c
           ./throughput_benchmark > throughput_benchmark_results.txt
-
-      # Benchmark 4: Overhead Benchmark
-      - name: Compile and Run Overhead Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
           gcc -o overhead_benchmark overhead_benchmark.c
           ./overhead_benchmark > overhead_benchmark_results.txt
 
+      # Run Clang Benchmarks
+      - name: Run Clang Benchmarks
+        continue-on-error: true
+        run: |
+          cd crypto_sign/falcon-512/clean
+          clang -o time_benchmark_clang time_benchmark.c
+          ./time_benchmark_clang > time_benchmark_clang_results.txt
+          clang -o cost_benchmark_clang cost_benchmark.c
+          /usr/bin/time -v ./cost_benchmark_clang > cost_benchmark_clang_results.txt
+          clang -o throughput_benchmark_clang throughput_benchmark.c
+          ./throughput_benchmark_clang > throughput_benchmark_clang_results.txt
+          clang -o overhead_benchmark_clang overhead_benchmark.c
+          ./overhead_benchmark_clang > overhead_benchmark_clang_results.txt
+
+      # Verify Benchmark Results
+      - name: Verify Benchmark Results
+        run: ls -l crypto_sign/falcon-512/clean/*.txt
+
       # Save Benchmark Results
       - name: Upload Benchmark Results
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: pqclean-benchmark-results
           path: |
-            crypto_sign/falcon-512/clean/time_benchmark_results.txt
-            crypto_sign/falcon-512/clean/cost_benchmark_results.txt
-            crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
-            crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
+            crypto_sign/falcon-512/clean/*.txt
