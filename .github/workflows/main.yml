@@ -1,4 +1,4 @@
-name: PQClean Comprehensive Benchmarking
+name: PQClean Benchmarking
 
 on:
   push:
@@ -12,12 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Set up dependencies
       - name: Set up dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc clang make time
 
-      # Run GCC Benchmarks
+      # GCC Benchmarks
       - name: Run GCC Benchmarks
         run: |
           cd crypto_sign/falcon-512/clean
@@ -30,9 +31,8 @@ jobs:
           gcc -o overhead_benchmark overhead_benchmark.c
           ./overhead_benchmark > overhead_benchmark_results.txt
 
-      # Run Clang Benchmarks
+      # Clang Benchmarks
       - name: Run Clang Benchmarks
-        continue-on-error: true
         run: |
           cd crypto_sign/falcon-512/clean
           clang -o time_benchmark_clang time_benchmark.c
@@ -44,13 +44,8 @@ jobs:
           clang -o overhead_benchmark_clang overhead_benchmark.c
           ./overhead_benchmark_clang > overhead_benchmark_clang_results.txt
 
-      # Verify Benchmark Results
-      - name: Verify Benchmark Results
-        run: ls -l crypto_sign/falcon-512/clean/*.txt
-
       # Save Benchmark Results
       - name: Upload Benchmark Results
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: pqclean-benchmark-results
