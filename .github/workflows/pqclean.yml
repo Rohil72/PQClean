@@ -1,0 +1,39 @@
+name: Build and Test PQClean
+
+# Trigger the workflow on push or pull request events to the `main` branch
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the main branch
+  pull_request:
+    branches:
+      - main  # Trigger on pull request to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner for the job
+
+    steps:
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v2  # This will check out your code repository
+
+    # Set up dependencies (install necessary packages like make and gcc)
+    - name: Set up dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y build-essential make gcc git
+
+    # Build the PQClean project
+    - name: Build PQClean
+      run: |
+        # Navigate to the PQClean directory (adjust if necessary)
+        cd crypto_sign/falcon-512/clean
+        make  # This will invoke the Makefile to compile the code
+
+    # Run tests (assuming the Makefile has a target for testing)
+    - name: Run tests
+      run: |
+        # Navigate to the PQClean directory
+        cd crypto_sign/falcon-512/clean
+        make test  # This assumes there's a 'test' target in the Makefile
