@@ -1,64 +1,57 @@
-name: PQClean Comprehensive Testing
+name: PQClean Benchmarking
 
-on: 
-  [push, pull_request]
-
-concurrency:
-  group: ci-common-${{ github.ref }}
-  cancel-in-progress: true
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  benchmark-tests:
+  benchmarks:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        arch: [amd64, i386]
-        cc: [gcc, clang]
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout Repository
+      # Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          submodules: true
 
-      # Step 2: Set up dependencies
-      - name: Set up Dependencies
-        if: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest' }}
+      # Set up dependencies
+      - name: Set up dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y gcc make time python3 python3-pip
+          sudo apt-get update
+          sudo apt-get install -y gcc make time
 
-      # Step 3: Cache dependencies
-      - name: Cache Ccache
-        uses: actions/cache@v3
-        with:
-          path: /ccache
-          key: cache-${{ runner.os }}-${{ matrix.cc }}-${{ matrix.arch }}
-
-      - name: Cache Python Dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: python-${{ runner.os }}
-
-      # Step 4: Run tests
-      - name: Run Benchmark Tests
+      # Benchmark 1: Time Benchmark
+      - name: Compile and Run Time Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o benchmark_time time_benchmark.c
-          ./benchmark_time > time_benchmark_results.txt
-          gcc -o benchmark_cost cost_benchmark.c
-          /usr/bin/time -v ./benchmark_cost > cost_benchmark_results.txt
-          gcc -o benchmark_throughput throughput_benchmark.c
-          ./benchmark_throughput > throughput_benchmark_results.txt
-          gcc -o benchmark_overhead overhead_benchmark.c
-          ./benchmark_overhead > overhead_benchmark_results.txt
+          gcc -o time_benchmark time_benchmark.c
+          ./time_benchmark > time_benchmark_results.txt
 
-      # Step 5: Save results
-      - name: Save Benchmark Results
+      # Benchmark 2: Cost Benchmark (CPU and Memory usage)
+      - name: Compile and Run Cost Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o cost_benchmark cost_benchmark.c
+          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+
+      # Benchmark 3: Throughput Benchmark
+      - name: Compile and Run Throughput Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o throughput_benchmark throughput_benchmark.c
+          ./throughput_benchmark > throughput_benchmark_results.txt
+
+      # Benchmark 4: Overhead Benchmark
+      - name: Compile and Run Overhead Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o overhead_benchmark overhead_benchmark.c
+          ./overhead_benchmark > overhead_benchmark_results.txt
+
+      # Save Benchmark Results
+      - name: Upload Benchmark Results
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-benchmark-results
+          name: pqclean-benchmark-results
           path: |
             crypto_sign/falcon-512/clean/time_benchmark_results.txt
             crypto_sign/falcon-512/clean/cost_benchmark_results.txt
