@@ -9,9 +9,11 @@ jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Set up dependencies
       - name: Set up dependencies
         run: |
           sudo apt-get update
@@ -45,7 +47,7 @@ jobs:
           gcc -o overhead_benchmark overhead_benchmark.c
           ./overhead_benchmark > overhead_benchmark_results.txt
 
-      # Upload Results
+      # Save Benchmark Results
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v3
         with:
