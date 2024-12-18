@@ -47,11 +47,33 @@ jobs:
           gcc -o overhead_benchmark overhead_benchmark.c
           ./overhead_benchmark > overhead_benchmark_results.txt
 
+      # Verify benchmark result files exist
+      - name: Verify benchmark result files
+        run: |
+          ls -l crypto_sign/falcon-512/clean/
+          
+      # Wait for file writes to finish (optional, can be adjusted)
+      - name: Wait for file writes to finish
+        run: sleep 10
+
       # Save Benchmark Results
       - name: Upload Benchmark Results
+        if: ${{ success() }}  # Only upload if previous steps succeeded
         uses: actions/upload-artifact@v3
         with:
           name: pqclean-benchmark-results
+          path: |
+            crypto_sign/falcon-512/clean/time_benchmark_results.txt
+            crypto_sign/falcon-512/clean/cost_benchmark_results.txt
+            crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
+            crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
+
+      # Handle failure case for artifact upload
+      - name: Upload Benchmark Results (Failure case)
+        if: ${{ failure() }}  # If any benchmark failed, try uploading anyway
+        uses: actions/upload-artifact@v3
+        with:
+          name: pqclean-benchmark-results-failure
           path: |
             crypto_sign/falcon-512/clean/time_benchmark_results.txt
             crypto_sign/falcon-512/clean/cost_benchmark_results.txt
