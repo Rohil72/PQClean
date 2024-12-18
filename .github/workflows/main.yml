@@ -13,34 +13,64 @@ jobs:
         uses: actions/checkout@v3
 
       # Set up dependencies
-      - name: Set up dependencies
+      - name: Install GCC and Clang dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc clang make time
 
-      # GCC Benchmarks
-      - name: Run GCC Benchmarks
+      # Benchmark 1: Time Benchmark using GCC
+      - name: Compile and Run Time Benchmark with GCC
         run: |
           cd crypto_sign/falcon-512/clean
           gcc -o time_benchmark time_benchmark.c
           ./time_benchmark > time_benchmark_results.txt
+
+      # Benchmark 2: Cost Benchmark (CPU and Memory usage) using GCC
+      - name: Compile and Run Cost Benchmark with GCC
+        run: |
+          cd crypto_sign/falcon-512/clean
           gcc -o cost_benchmark cost_benchmark.c
           /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+
+      # Benchmark 3: Throughput Benchmark using GCC
+      - name: Compile and Run Throughput Benchmark with GCC
+        run: |
+          cd crypto_sign/falcon-512/clean
           gcc -o throughput_benchmark throughput_benchmark.c
           ./throughput_benchmark > throughput_benchmark_results.txt
+
+      # Benchmark 4: Overhead Benchmark using GCC
+      - name: Compile and Run Overhead Benchmark with GCC
+        run: |
+          cd crypto_sign/falcon-512/clean
           gcc -o overhead_benchmark overhead_benchmark.c
           ./overhead_benchmark > overhead_benchmark_results.txt
 
-      # Clang Benchmarks
-      - name: Run Clang Benchmarks
+      # Benchmark 1: Time Benchmark using Clang
+      - name: Compile and Run Time Benchmark with Clang
         run: |
           cd crypto_sign/falcon-512/clean
           clang -o time_benchmark_clang time_benchmark.c
           ./time_benchmark_clang > time_benchmark_clang_results.txt
+
+      # Benchmark 2: Cost Benchmark using Clang
+      - name: Compile and Run Cost Benchmark with Clang
+        run: |
+          cd crypto_sign/falcon-512/clean
           clang -o cost_benchmark_clang cost_benchmark.c
           /usr/bin/time -v ./cost_benchmark_clang > cost_benchmark_clang_results.txt
+
+      # Benchmark 3: Throughput Benchmark using Clang
+      - name: Compile and Run Throughput Benchmark with Clang
+        run: |
+          cd crypto_sign/falcon-512/clean
           clang -o throughput_benchmark_clang throughput_benchmark.c
           ./throughput_benchmark_clang > throughput_benchmark_clang_results.txt
+
+      # Benchmark 4: Overhead Benchmark using Clang
+      - name: Compile and Run Overhead Benchmark with Clang
+        run: |
+          cd crypto_sign/falcon-512/clean
           clang -o overhead_benchmark_clang overhead_benchmark.c
           ./overhead_benchmark_clang > overhead_benchmark_clang_results.txt
 
@@ -50,4 +80,4 @@ jobs:
         with:
           name: pqclean-benchmark-results
           path: |
-            crypto_sign/falcon-512/clean/*.txt
+            crypto_sign/falcon-512/clean/*_results.txt
