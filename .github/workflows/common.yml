@@ -50,6 +50,13 @@ jobs:
           cd test
           python3 test_common.py --numprocesses=auto
           python3 test_workflows.py
+      - name: Save benchmark results
+        if: success()  # This ensures results are saved only if the tests succeed
+        uses: actions/upload-artifact@v2
+        with:
+          name: native-benchmarks
+          path: benchmarks/results.txt  # Modify this to your actual benchmark results file
+
   test-emulated:
     runs-on: ubuntu-latest
     strategy:
@@ -93,6 +100,13 @@ jobs:
           pip3 install -U --break-system-packages --ignore-installed -r requirements.txt && \
           cd test && \
           python3 test_common.py --numprocesses=auto"
+      - name: Save benchmark results
+        if: success()  # Ensure that results are saved only if the tests succeed
+        uses: actions/upload-artifact@v2
+        with:
+          name: emulated-benchmarks
+          path: benchmarks/results.txt  # Modify this to your actual benchmark results file
+
   test-windows:
     strategy:
       matrix:
@@ -126,6 +140,13 @@ jobs:
           python -m pytest --verbose --numprocesses=auto
           python test_common.py --numprocesses=auto
         shell: cmd
+      - name: Save benchmark results
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-benchmarks
+          path: benchmarks/results.txt  # Modify this to your actual benchmark results file
+
   test-macos:
     env:
       CCACHE_NOSTATS: 1
@@ -156,3 +177,9 @@ jobs:
         run: |
           cd test
           python test_common.py --numprocesses=auto
+      - name: Save benchmark results
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-benchmarks
+          path: benchmarks/results.txt  # Modify this to your actual benchmark results file
