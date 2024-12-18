@@ -1,0 +1,57 @@
+name: PQClean Benchmarking
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc make time
+
+      # Benchmark 1: Time Benchmark
+      - name: Compile and Run Time Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o time_benchmark time_benchmark.c
+          ./time_benchmark > time_benchmark_results.txt
+
+      # Benchmark 2: Cost Benchmark (CPU and Memory usage)
+      - name: Compile and Run Cost Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o cost_benchmark cost_benchmark.c
+          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+
+      # Benchmark 3: Throughput Benchmark
+      - name: Compile and Run Throughput Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o throughput_benchmark throughput_benchmark.c
+          ./throughput_benchmark > throughput_benchmark_results.txt
+
+      # Benchmark 4: Overhead Benchmark
+      - name: Compile and Run Overhead Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o overhead_benchmark overhead_benchmark.c
+          ./overhead_benchmark > overhead_benchmark_results.txt
+
+      # Upload Results
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pqclean-benchmark-results
+          path: |
+            crypto_sign/falcon-512/clean/time_benchmark_results.txt
+            crypto_sign/falcon-512/clean/cost_benchmark_results.txt
+            crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
+            crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
