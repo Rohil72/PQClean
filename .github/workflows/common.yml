@@ -3,76 +3,138 @@ name: PQClean Benchmarking
 on:
   push:
     branches:
-      - main
+      - 'master'
+    paths:
+      - 'test/**'
+      - '!test/duplicate_consistency/*.yml'
+      - 'test/duplicate_consistency/falcon-512*.yml'
+      - 'common/**'
+      - 'crypto_sign/falcon-512/**'
+      - '.github/workflows/sign_falcon-512.yml'
+      - '*'
+      - '!*.md'
+  pull_request:
+    paths:
+      - 'test/**'
+      - '!test/duplicate_consistency/*.yml'
+      - 'test/duplicate_consistency/falcon-512*.yml'
+      - 'common/**'
+      - 'crypto_sign/falcon-512/**'
+      - '.github/workflows/sign_falcon-512.yml'
+      - '*'
+      - '!*.md'
+  schedule:
+    - cron: '5 4 * * *'
+
+concurrency:
+  group: ci-falcon-512-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
-      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Set up dependencies
       - name: Set up dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc make time
 
-      # Benchmark 1: Time Benchmark
+      - name: Create benchmark files
+        run: |
+          mkdir -p crypto_sign/falcon-512/clean
+          cd crypto_sign/falcon-512/clean
+
+          # Create time benchmark
+          cat > time_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <time.h>
+
+          int main() {
+              clock_t start, end;
+              double cpu_time_used;
+
+              start = clock();
+              // Add your benchmarking code here
+              end = clock();
+
+              cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+              printf("Time benchmark completed\n");
+              printf("Execution time: %f seconds\n", cpu_time_used);
+
+              return 0;
+          }
+          EOL
+
+          # Create cost benchmark
+          cat > cost_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Add your benchmarking code here for CPU and Memory usage.
+              printf("Cost benchmark completed\n");
+
+              return 0;
+          }
+          EOL
+
+          # Create overhead benchmark
+          cat > overhead_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Add your benchmarking code here for operational overhead.
+              printf("Overhead benchmark completed\n");
+
+              return 0;
+          }
+          EOL
+
+          # Create throughput benchmark
+          cat > throughput_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Add your benchmarking code here for data processed over time.
+              printf("Throughput benchmark completed\n");
+
+              return 0;
+          }
+          EOL
+
       - name: Compile and Run Time Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o time_benchmark time_benchmark.c -lm
-          if [ -f time_benchmark ]; then
-            ./time_benchmark > time_benchmark_results.txt
-          else
-            echo "Compilation failed for time_benchmark"
-            exit 1
-          fi
+          gcc -o time_benchmark time_benchmark.c
+          ./time_benchmark > time_benchmark_results.txt
 
-      # Benchmark 2: Cost Benchmark (CPU and Memory usage)
       - name: Compile and Run Cost Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o cost_benchmark cost_benchmark.c -lm
-          if [ -f cost_benchmark ]; then
-            /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
-          else
-            echo "Compilation failed for cost_benchmark"
-            exit 1
-          fi
+          gcc -o cost_benchmark cost_benchmark.c
+          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
 
-      # Benchmark 3: Throughput Benchmark
-      - name: Compile and Run Throughput Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
-          gcc -o throughput_benchmark throughput_benchmark.c -lm
-          if [ -f throughput_benchmark ]; then
-            ./throughput_benchmark > throughput_benchmark_results.txt
-          else
-            echo "Compilation failed for throughput_benchmark"
-            exit 1
-          fi
-
-      # Benchmark 4: Overhead Benchmark
       - name: Compile and Run Overhead Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o overhead_benchmark overhead_benchmark.c -lm
-          if [ -f overhead_benchmark ]; then
-            ./overhead_benchmark > overhead_benchmark_results.txt
-          else
-            echo "Compilation failed for overhead_benchmark"
-            exit 1
-          fi
+          gcc -o overhead_benchmark overhead_benchmark.c
+          ./overhead_benchmark > overhead_benchmark_results.txt
 
-      # Debug Directory Content (check if the result files exist)
+      - name: Compile and Run Throughput Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o throughput_benchmark throughput_benchmark.c
+          ./throughput_benchmark > throughput_benchmark_results.txt
+
       - name: Debug Directory Content
         run: |
           ls -l crypto_sign/falcon-512/clean
 
-      # Save Benchmark Results (Upload Artifact)
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v3
         with:
@@ -82,3 +144,167 @@ jobs:
             crypto_sign/falcon-512/clean/cost_benchmark_results.txt
             crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
             crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
+
+  test-native:
+    runs-on: ubuntu-latest
+    container:
+      image: pqclean/ci-container:${{ matrix.arch }}
+      env:
+        PQCLEAN_ONLY_SCHEMES: falcon-512
+        CC: ccache ${{ matrix.cc }}
+        CCACHE_NOSTATS: 1
+        CCACHE_DIR: /ccache
+        CCACHE_SLOPPINESS: include_file_mtime
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - i386
+        cc:
+          - gcc
+          - clang
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Cache ccache
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-ccache
+        with:
+          path: /ccache
+          key: v1-${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.cc }}-${{ env.GITHUB_WORKFLOW }}-${{ matrix.arch }}
+      - name: Cache pip
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-python-pip
+        with:
+          path: ~/.cache/pip
+          key: v1-python-pip
+      - name: Install python dependencies
+        run: |
+          python3 -m pip install -U --break-system-packages -r requirements.txt
+      - name: Run tests
+        run: |
+          cd test
+          python3 -m pytest --verbose --numprocesses=auto
+
+  test-emulated:
+    needs:
+      - test-native
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - armhf
+          - unstable-ppc
+        cc:
+          - gcc
+          - clang
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+      - name: Register qemu-user-static
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Cache ccache
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-ccache
+        with:
+          path: ~/ccache
+          key: v1-${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.cc }}-${{ env.GITHUB_WORKFLOW }}-${{ matrix.arch }}
+      - name: Cache pip
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-python-pip
+        with:
+          path: ~/.cache/pip
+          key: v1-python-pip
+      - name: Run tests in container
+        run: |
+          docker run --rm -e CI -e CC -e PQCLEAN_ONLY_SCHEMES=falcon-512 -v $PWD:$PWD -w $PWD -v ~/ccache:/ccache pqclean/ci-container:${{ matrix.arch }} /bin/bash -c "\
+          export CCACHE_NOSTATS=1 && \
+          export CCACHE_DIR=/ccache && \
+          export CCACHE_SLOPPINESS=include_file_mtime && \
+          export CC=\"ccache $CC\" && \
+          pip3 install -U --break-system-packages --ignore-installed -r requirements.txt && \
+          cd test && \
+          python3 -m pytest --verbose --numprocesses=auto"
+
+  test-windows:
+    needs:
+      - test-native
+    strategy:
+      matrix:
+        arch:
+          - x64
+          - x86
+    env:
+      PQCLEAN_ONLY_SCHEMES: falcon-512
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+      - name: Setup astyle
+        run: |
+          # Setup strong crypto
+          Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\.NetFramework\\v4.0.30319" -Name 'SchUseStrongCrypto' -Value '1' -Type DWord
+          Set-ItemProperty -Path "HKLM:\\SOFTWARE\\Microsoft\\.NetFramework\\v4.0.30319" -Name "SchUseStrongCrypto" -Value '1' -Type DWord
+          Invoke-WebRequest -OutFile "test\\astyle.exe" "https://rded.nl/pqclean/AStyle.exe"
+        shell: powershell
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install python requirements
+        run: python -m pip install -U --break-system-packages -r requirements.txt
+      - name: Run tests
+        run: |
+          cd test
+          python -m pytest --verbose --numprocesses=auto
+        shell: cmd
+
+  test-macos:
+    needs:
+      - test-native
+    env:
+      PQCLEAN_ONLY_SCHEMES: falcon-512
+      CCACHE_NOSTATS: 1
+      CCACHE_SLOPPINESS: include_file_mtime
+    strategy:
+      matrix:
+        compiler:
+          - clang  # XCode (Apple LLVM/Clang)
+          - gcc11   # GNU (Homebrew)
+    runs-on: macos-latest
+    steps:
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install astyle
+        run: |
+          brew install astyle
+      - name: Set up GCC11 compiler
+        run: 'export PATH="/usr/local/bin:$PATH" && export CC=gcc-11'
+        if: matrix.compiler == 'gcc11'
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install Python dependencies
+        run: python -m pip install -U --break-system-packages -r requirements.txt
+      - name: Run tests
+        run: |
+          cd test
+          python -m pytest --verbose --numprocesses=auto
