@@ -23,29 +23,49 @@ jobs:
       - name: Compile and Run Time Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o time_benchmark time_benchmark.c
-          ./time_benchmark > time_benchmark_results.txt
+          gcc -o time_benchmark time_benchmark.c -lm
+          if [ -f time_benchmark ]; then
+            ./time_benchmark > time_benchmark_results.txt
+          else
+            echo "Compilation failed for time_benchmark"
+            exit 1
+          fi
 
       # Benchmark 2: Cost Benchmark (CPU and Memory usage)
       - name: Compile and Run Cost Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o cost_benchmark cost_benchmark.c
-          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+          gcc -o cost_benchmark cost_benchmark.c -lm
+          if [ -f cost_benchmark ]; then
+            /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+          else
+            echo "Compilation failed for cost_benchmark"
+            exit 1
+          fi
 
       # Benchmark 3: Throughput Benchmark
       - name: Compile and Run Throughput Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o throughput_benchmark throughput_benchmark.c
-          ./throughput_benchmark > throughput_benchmark_results.txt
+          gcc -o throughput_benchmark throughput_benchmark.c -lm
+          if [ -f throughput_benchmark ]; then
+            ./throughput_benchmark > throughput_benchmark_results.txt
+          else
+            echo "Compilation failed for throughput_benchmark"
+            exit 1
+          fi
 
       # Benchmark 4: Overhead Benchmark
       - name: Compile and Run Overhead Benchmark
         run: |
           cd crypto_sign/falcon-512/clean
-          gcc -o overhead_benchmark overhead_benchmark.c
-          ./overhead_benchmark > overhead_benchmark_results.txt
+          gcc -o overhead_benchmark overhead_benchmark.c -lm
+          if [ -f overhead_benchmark ]; then
+            ./overhead_benchmark > overhead_benchmark_results.txt
+          else
+            echo "Compilation failed for overhead_benchmark"
+            exit 1
+          fi
 
       # Debug Directory Content (check if the result files exist)
       - name: Debug Directory Content
