@@ -31,120 +31,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  benchmarks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc make time
-
-      - name: Create benchmark files
-        run: |
-          mkdir -p crypto_sign/falcon-512/clean
-          cd crypto_sign/falcon-512/clean
-
-          # Create time benchmark
-          cat > time_benchmark.c << 'EOL'
-          #include <stdio.h>
-          #include <time.h>
-
-          int main() {
-              clock_t start, end;
-              double cpu_time_used;
-
-              start = clock();
-              // Add your benchmarking code here
-              end = clock();
-
-              cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-              printf("Time benchmark completed\n");
-              printf("Execution time: %f seconds\n", cpu_time_used);
-
-              return 0;
-          }
-          EOL
-
-          # Create cost benchmark
-          cat > cost_benchmark.c << 'EOL'
-          #include <stdio.h>
-          #include <stdlib.h>
-
-          int main() {
-              // Add your benchmarking code here for CPU and Memory usage.
-              printf("Cost benchmark completed\n");
-
-              return 0;
-          }
-          EOL
-
-          # Create overhead benchmark
-          cat > overhead_benchmark.c << 'EOL'
-          #include <stdio.h>
-          #include <stdlib.h>
-
-          int main() {
-              // Add your benchmarking code here for operational overhead.
-              printf("Overhead benchmark completed\n");
-
-              return 0;
-          }
-          EOL
-
-          # Create throughput benchmark
-          cat > throughput_benchmark.c << 'EOL'
-          #include <stdio.h>
-          #include <stdlib.h>
-
-          int main() {
-              // Add your benchmarking code here for data processed over time.
-              printf("Throughput benchmark completed\n");
-
-              return 0;
-          }
-          EOL
-
-      - name: Compile and Run Time Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
-          gcc -o time_benchmark time_benchmark.c
-          ./time_benchmark > time_benchmark_results.txt
-
-      - name: Compile and Run Cost Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
-          gcc -o cost_benchmark cost_benchmark.c
-          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
-
-      - name: Compile and Run Overhead Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
-          gcc -o overhead_benchmark overhead_benchmark.c
-          ./overhead_benchmark > overhead_benchmark_results.txt
-
-      - name: Compile and Run Throughput Benchmark
-        run: |
-          cd crypto_sign/falcon-512/clean
-          gcc -o throughput_benchmark throughput_benchmark.c
-          ./throughput_benchmark > throughput_benchmark_results.txt
-
-      - name: Debug Directory Content
-        run: |
-          ls -l crypto_sign/falcon-512/clean
-
-      - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: pqclean-benchmark-results
-          path: |
-            crypto_sign/falcon-512/clean/time_benchmark_results.txt
-            crypto_sign/falcon-512/clean/cost_benchmark_results.txt
-            crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
-            crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
-
   test-native:
     runs-on: ubuntu-latest
     container:
@@ -308,3 +194,122 @@ jobs:
         run: |
           cd test
           python -m pytest --verbose --numprocesses=auto
+
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc make time
+
+      - name: Create benchmark files
+        run: |
+          mkdir -p crypto_sign/falcon-512/clean
+          cd crypto_sign/falcon-512/clean
+
+          # Create time benchmark
+          cat > time_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <time.h>
+
+          int main() {
+              clock_t start, end;
+              double cpu_time_used;
+
+              start = clock();
+              // Simulate work
+              for (volatile int i = 0; i < 100000000; i++);
+              end = clock();
+
+              cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+              printf("Time benchmark completed\n");
+              printf("Execution time: %f seconds\n", cpu_time_used);
+
+              return 0;
+          }
+          EOL
+
+          # Create cost benchmark
+          cat > cost_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Simulate work
+              int *arr = (int *)malloc(1000000 * sizeof(int));
+              for (int i = 0; i < 1000000; i++) {
+                  arr[i] = i;
+              }
+              printf("Cost benchmark completed\n");
+              free(arr);
+              return 0;
+          }
+          EOL
+
+          # Create overhead benchmark
+          cat > overhead_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Simulate work
+              for (volatile int i = 0; i < 1000000; i++);
+              printf("Overhead benchmark completed\n");
+              return 0;
+          }
+          EOL
+
+          # Create throughput benchmark
+          cat > throughput_benchmark.c << 'EOL'
+          #include <stdio.h>
+          #include <stdlib.h>
+
+          int main() {
+              // Simulate work
+              for (volatile int i = 0; i < 1000000; i++);
+              printf("Throughput benchmark completed\n");
+              return 0;
+          }
+          EOL
+
+      - name: Compile and Run Time Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o time_benchmark time_benchmark.c
+          ./time_benchmark > time_benchmark_results.txt
+
+      - name: Compile and Run Cost Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o cost_benchmark cost_benchmark.c
+          /usr/bin/time -v ./cost_benchmark > cost_benchmark_results.txt
+
+      - name: Compile and Run Overhead Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o overhead_benchmark overhead_benchmark.c
+          ./overhead_benchmark > overhead_benchmark_results.txt
+
+      - name: Compile and Run Throughput Benchmark
+        run: |
+          cd crypto_sign/falcon-512/clean
+          gcc -o throughput_benchmark throughput_benchmark.c
+          ./throughput_benchmark > throughput_benchmark_results.txt
+
+      - name: Debug Directory Content
+        run: |
+          ls -l crypto_sign/falcon-512/clean
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pqclean-benchmark-results
+          path: |
+            crypto_sign/falcon-512/clean/time_benchmark_results.txt
+            crypto_sign/falcon-512/clean/cost_benchmark_results.txt
+            crypto_sign/falcon-512/clean/throughput_benchmark_results.txt
+            crypto_sign/falcon-512/clean/overhead_benchmark_results.txt
